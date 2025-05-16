@@ -22,7 +22,7 @@ beta_3 = -45
 Y = beta_0 + beta_1 * X + beta_2 * X**2 + beta_3 * X**3 + epsilon
 
 # Creating a list of features:
-features = [X**i for i in range(1, 11)]
+init_features = [X**i for i in range(1, 11)]
 
 
 # Function for training and testing the model for some selected features
@@ -42,79 +42,94 @@ def train_and_test(x_data):
     return r2_score(y_test, y_pred)
 
 
-def forward_stepwise_selection(max_amount_of_features=5):
-    x_selected = []  # X_dataset with selected features only
-    x_selected_last_iter = None  # I have no idea why we actually need this variable, but it was on the slide
+def forward_stepwise_selection(max_amount_of_features=5, x_selected_indices=None):
+    if x_selected_indices is None:
+        x_selected_indices = set()  # the set of indices of selected features
+    all_features_indices = set(range(len(init_features)))  # set with all feature numbers
+    x_selected = []  # the set of selected features
+    x_left_indices = all_features_indices.copy()
+
     c_rate_best = float("-inf")  # The best r2 rate we managed to achieve by now with current selection of features
 
-    while len(x_selected) < max_amount_of_features:  # Until we achieve the max amount of allowed features
+    while len(x_selected_indices) < max_amount_of_features:  # Until we achieve the max amount of allowed features
 
-        x_selected_last_iter = x_selected.copy()  # Again, no idea why we need this
-        c_rate = [float("-inf")] * len(features)  # The r2 rates of the model, if we add j-th feature to the current feature set
+        c_rate = {feature_num: float("-inf") for feature_num in x_left_indices}
+        for j in x_left_indices:  # Iterate through the not used features
 
-        for j, xj in enumerate(features):  # Iterate through the features
-            if not any(array_equal(xj, selected) for selected in x_selected):  # if this feature was not used yet
-
-                # Test what happens if we add this feature
-                x_selected_temp = x_selected + [xj]
-                c_rate[j] = train_and_test(x_selected_temp)
+            # Test what happens if we add this feature
+            feature = init_features[j]
+            x_selected_temp = x_selected.copy()
+            x_selected_temp.append(feature)
+            c_rate[j] = train_and_test(x_selected_temp)
 
         # Check which feature was the best to add
-        x_best_addition = c_rate.index(max(c_rate))
+        c_rate_list = c_rate.items()
+        x_best_addition = sorted(c_rate_list, key=lambda x: x[1], reverse=True)[0]
 
         # If adding the best feature makes the result worse, break the cycle
-        if c_rate[x_best_addition] > c_rate_best:
-            x_selected.append(features[x_best_addition])
-            c_rate_best = c_rate[x_best_addition]
+        if x_best_addition[1] > c_rate_best:
+            x_selected_indices.add(x_best_addition[0])
+            x_selected.append(init_features[x_best_addition[0]])
+            c_rate_best = x_best_addition[1]
         else:
             break
 
-    return x_selected, x_selected_last_iter
+    return x_selected, x_selected_indices
 
 
-def backward_stepwise_selection(min_amount_of_features=3):
-    x_selected = features.copy()  # X_dataset with selected features only
-    x_selected_last_iter = None  # I have no idea why we actually need this variable, but it was on the slide
+def backward_stepwise_selection(min_amount_of_features=3, x_included_indices=None):
+    if x_included_indices is None:
+        x_included_indices = set(range(len(init_features)))
+    x_selected_indices = x_included_indices.copy()  # Start with all features
+    x_selected = [init_features[i] for i in x_selected_indices]
+
     c_rate_best = float("-inf")  # The best r2 rate we managed to achieve by now with current selection of features
 
-    while len(x_selected) > min_amount_of_features:  # Until we achieve the max amount of allowed features
+    while len(x_selected_indices) > min_amount_of_features:  # Until we achieve the min amount of allowed features
+        c_rate = {feature_num: float("-inf") for feature_num in x_selected_indices}
+        for j in x_selected_indices:  # Iterate through the currently included features
 
-        x_selected_last_iter = x_selected.copy()  # Again, no idea why we need this
-        c_rate = [float("-inf")] * len(features)  # The r2 rates of the model, if we add j-th feature to the current feature set
+            # Test what happens if we remove this feature
+            x_selected_temp = x_selected.copy()
+            x_selected_temp = [feature for feature in x_selected_temp if not np.array_equal(feature, init_features[j])]
+            c_rate[j] = train_and_test(x_selected_temp)
 
-        for j, xj in enumerate(features):  # Iterate through the features
-            if any(array_equal(xj, selected) for selected in x_selected):  # if this feature was already used
+        # Check which feature is the best to remove
+        c_rate_list = c_rate.items()
+        x_best_removal = sorted(c_rate_list, key=lambda x: x[1], reverse=True)[0]
 
-                # Test what happens if we remove this feature
-                x_selected_temp = x_selected.copy()
-                x_selected_temp.remove(features[xj])
-
-                c_rate[j] = train_and_test(x_selected_temp)
-
-        # Check which feature was the best to remove
-        x_best_substraction = c_rate.index(max(c_rate))
-
-        # If removing the best feature makes the result worse, break the cycle
-        if c_rate[x_best_substraction] > c_rate_best:
-            x_selected.remove(features[x_best_substraction])
-            c_rate_best = c_rate[x_best_substraction]
+        # If removing the best feature makes the result better, update the selection
+        if x_best_removal[1] > c_rate_best:
+            x_selected_indices.remove(x_best_removal[0])
+            x_selected = [init_features[i] for i in x_selected_indices]
+            c_rate_best = x_best_removal[1]
         else:
             break
 
-    return x_selected, x_selected_last_iter
+    return x_selected, x_selected_indices
 
-x_selected, x_selected_last_iter = forward_stepwise_selection()
 
-x_selected_indices = [j + 1 for j, feature in enumerate(features) if
-                      any(array_equal(feature, selected) for selected in x_selected)]
+x_selected, x_selected_indices = forward_stepwise_selection()
+print("Only forward stepwise selection:")
 print(f"Selected feature indices: {x_selected_indices}")
 print(f"Model R2 score: {train_and_test(x_selected)}")
 
-print(len(x_selected))
-print(train_and_test(x_selected))
+x_selected, x_selected_indices = backward_stepwise_selection()
+print("\n- - -\n")
+print("Only backward stepwise selection:")
+print(f"Selected feature indices: {x_selected_indices}")
+print(f"Model R2 score: {train_and_test(x_selected)}")
 
-# Testing the train_and_test function using the first 4 features
-first_4_features = features[:4]
-print(f"R2 score using the first 4 features: {train_and_test(first_4_features)}")
-
+print("\n- - -\n")
+print("Both stepwise selection(forward and backward):")
+x_selected, x_selected_indices = forward_stepwise_selection(max_amount_of_features=10)
+x_selected, x_selected_indices = backward_stepwise_selection(min_amount_of_features=3, x_included_indices=x_selected_indices)
+print(f"Selected feature indices: {x_selected_indices}")
+print(f"Model R2 score: {train_and_test(x_selected)}")
+print("\n- - -\n")
+print("Both stepwise selection(backward and forward):")
+x_selected, x_selected_indices = backward_stepwise_selection(min_amount_of_features=3)
+x_selected, x_selected_indices = forward_stepwise_selection(max_amount_of_features=10, x_selected_indices=x_selected_indices)
+print(f"Selected feature indices: {x_selected_indices}")
+print(f"Model R2 score: {train_and_test(x_selected)}")
 
