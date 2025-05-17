@@ -1,28 +1,29 @@
 import numpy as np
-from numpy import array_equal
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 
 RANDOM_STATE = 42
 
-# (a) Generate Predictors and Noise
-rng = np.random.default_rng(RANDOM_STATE)
-n = 100
-X = rng.normal(size=n)
-epsilon = rng.normal(size=n)
+def generate_data():
+    # Generate Predictors and Noise
+    rng = np.random.default_rng(RANDOM_STATE)
+    n = 100
+    X = rng.normal(size=n)
+    epsilon = rng.normal(size=n)
 
+    # Generating the Target Variable
+    beta_0 = 12
+    beta_1 = -2.3
+    beta_2 = 3.4
+    beta_3 = -45
 
-# (b) Generating the Target Variable
-beta_0 = 12
-beta_1 = -2.3
-beta_2 = 3.4
-beta_3 = -45
+    Y = beta_0 + beta_1 * X + beta_2 * X**2 + beta_3 * X**3 + epsilon
 
-Y = beta_0 + beta_1 * X + beta_2 * X**2 + beta_3 * X**3 + epsilon
+    # Creating a list of features:
+    list_of_features = [X**i for i in range(1, 11)]
 
-# Creating a list of features:
-init_features = [X**i for i in range(1, 11)]
+    return X, Y, list_of_features
 
 
 # Function for training and testing the model for some selected features
@@ -86,6 +87,7 @@ def backward_stepwise_selection(min_amount_of_features=3, x_included_indices=Non
     c_rate_best = float("-inf")  # The best r2 rate we managed to achieve by now with current selection of features
 
     while len(x_selected_indices) > min_amount_of_features:  # Until we achieve the min amount of allowed features
+
         c_rate = {feature_num: float("-inf") for feature_num in x_selected_indices}
         for j in x_selected_indices:  # Iterate through the currently included features
 
@@ -109,27 +111,34 @@ def backward_stepwise_selection(min_amount_of_features=3, x_included_indices=Non
     return x_selected, x_selected_indices
 
 
+# Generate some data & features
+X, Y, init_features = generate_data()
+
+# Try only forward-stepwise-selection(FSS)
 x_selected, x_selected_indices = forward_stepwise_selection()
 print("Only forward stepwise selection:")
 print(f"Selected feature indices: {x_selected_indices}")
 print(f"Model R2 score: {train_and_test(x_selected)}")
-
-x_selected, x_selected_indices = backward_stepwise_selection()
 print("\n- - -\n")
+
+# Try only backward-stepwise-selection(BSS)
+x_selected, x_selected_indices = backward_stepwise_selection()
 print("Only backward stepwise selection:")
 print(f"Selected feature indices: {x_selected_indices}")
 print(f"Model R2 score: {train_and_test(x_selected)}")
-
 print("\n- - -\n")
+
+# Try FSS + BSS
 print("Both stepwise selection(forward and backward):")
 x_selected, x_selected_indices = forward_stepwise_selection(max_amount_of_features=10)
 x_selected, x_selected_indices = backward_stepwise_selection(min_amount_of_features=3, x_included_indices=x_selected_indices)
 print(f"Selected feature indices: {x_selected_indices}")
 print(f"Model R2 score: {train_and_test(x_selected)}")
 print("\n- - -\n")
+
+# Try BSS + FSS
 print("Both stepwise selection(backward and forward):")
 x_selected, x_selected_indices = backward_stepwise_selection(min_amount_of_features=3)
 x_selected, x_selected_indices = forward_stepwise_selection(max_amount_of_features=10, x_selected_indices=x_selected_indices)
 print(f"Selected feature indices: {x_selected_indices}")
 print(f"Model R2 score: {train_and_test(x_selected)}")
-
