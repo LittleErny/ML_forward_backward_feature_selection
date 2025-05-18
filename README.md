@@ -63,7 +63,7 @@ should not trust it very easily. And the textbooks are actually not so scary:)
 ### Requirements
 
 - Python 3.12 or higher.
-- Dependencies (e.g., numpy, scikit-learn, scipy) can be installed using `pip install -r requirements.txt`.
+- Dependencies can be installed using `pip install -r requirements.txt`.
 
 ### References
 
