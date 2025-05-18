@@ -24,7 +24,7 @@ Y = \beta_0 + \beta_1 X + \beta_2 X^2 + \beta_3 X^3 + \varepsilon
 $$
 
 The coefficients were selected by me so that they had more or less similar affect on the target variable.
-### (c) Forward Stepwise Selection
+### (c) Forward Stepwise Selection (FSS)
 
 Forward stepwise selection was used to identify the best model from the predictors:
 
@@ -34,7 +34,7 @@ $$
 
 The selection was based on **Mallows' $C_p$** criterion.
 
-### (d) Backward Stepwise Selection
+### (d) Backward Stepwise Selection (BSS)
 
 Similarly to (c), Backward Stepwise Selection was used to identify the best model from the predictors.
 
