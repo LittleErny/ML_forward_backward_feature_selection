@@ -18,9 +18,10 @@ BETA_0 = 20
 BETA_1 = -5
 BETA_2 = 4
 BETA_3 = -1
+BETA_7 = 0.5
 
 
-# Function to generate fake data
+# Function to generate fake data for the tasks a-d
 def generate_data():
     # Generate Predictors and Noise
     rng = np.random.default_rng(RANDOM_STATE)
@@ -35,6 +36,21 @@ def generate_data():
 
     return X, Y, list_of_features
 
+
+# Function to generate fake data for the task f
+def generate_data_2():
+    # Generate Predictors and Noise
+    rng = np.random.default_rng(RANDOM_STATE)
+    X = rng.normal(size=N)
+    epsilon = rng.normal(size=N)
+
+    # Generating the Target Variable
+    Y = BETA_0 +  BETA_7 * X ** 7 + epsilon
+
+    # Creating a list of features:
+    list_of_features = [X ** i for i in range(1, NUMBER_OF_FEATURES + 1)]
+
+    return X, Y, list_of_features
 
 def calculate_sigma2(x_data):
     x_data_stacked = np.column_stack(x_data)
@@ -182,7 +198,7 @@ def print_coefs_table(predicted_polynomial_coeficients):
     [print("--------+-------", end='') for i in range(NUMBER_OF_FEATURES + 1)]
     print()
     print("Coefficient", end='\t\t\t|\t\t')
-    [print(f'{coef:.2f}' if coef is not None else "None", end='\t|\t\t') for coef in predicted_polynomial_coeficients]
+    [print(f'{coef:.4f}' if coef is not None else "None", end='\t|\t\t') for coef in predicted_polynomial_coeficients]
     print()
 
 
@@ -198,7 +214,7 @@ included_feature_indices = forward_stepwise_selection()
 model_cp, r2, intercept, coefs = train_and_test([init_features[i] for i in sorted(list(included_feature_indices))])
 predicted_polynomial_coeficients = arrange_polynomial_coefficients(coefs, included_feature_indices)
 
-print("Only forward stepwise selection:")
+print("Only forward stepwise selection(task C):")
 print(f"Model R2 score: {r2}")
 print(f"Model Cp score: {model_cp:.2f}")
 print_coefs_table([intercept] + predicted_polynomial_coeficients)
@@ -210,35 +226,80 @@ included_feature_indices = backward_stepwise_selection()
 model_cp, r2, intercept, coefs = train_and_test([init_features[i] for i in sorted(list(included_feature_indices))])
 predicted_polynomial_coeficients = arrange_polynomial_coefficients(coefs, included_feature_indices)
 
-print("Only backward stepwise selection:")
+print("Only backward stepwise selection(task D):")
 print(f"Model R2 score: {r2}")
 print(f"Model Cp score: {model_cp:.2f}")
 print_coefs_table([intercept] + predicted_polynomial_coeficients)
 
 print("\n- - -\n")
 
-# Try FSS + BSS
-print("Both stepwise selection (forward and backward):")
-included_feature_indices = forward_stepwise_selection(max_amount_of_features=10)
-included_feature_indices = backward_stepwise_selection(min_amount_of_features=3,
-                                                       included_feature_indices=included_feature_indices)
+# # Try FSS + BSS
+# print("Both stepwise selection (forward and backward):")
+# included_feature_indices = forward_stepwise_selection(max_amount_of_features=10)
+# included_feature_indices = backward_stepwise_selection(min_amount_of_features=3,
+#                                                        included_feature_indices=included_feature_indices)
+# model_cp, r2, intercept, coefs = train_and_test([init_features[i] for i in sorted(list(included_feature_indices))])
+# predicted_polynomial_coeficients = arrange_polynomial_coefficients(coefs, included_feature_indices)
+#
+# print(f"Model R2 score: {r2}")
+# print(f"Model Cp score: {model_cp:.2f}")
+# print_coefs_table([intercept] + predicted_polynomial_coeficients)
+#
+# print("\n- - -\n")
+
+# # Try BSS + FSS
+# print("Both stepwise selection (backward and forward):")
+# included_feature_indices = backward_stepwise_selection(min_amount_of_features=3)
+# included_feature_indices = forward_stepwise_selection(max_amount_of_features=10,
+#                                                       included_feature_indices=included_feature_indices)
+# model_cp, r2, intercept, coefs = train_and_test([init_features[i] for i in sorted(list(included_feature_indices))])
+# predicted_polynomial_coeficients = arrange_polynomial_coefficients(coefs, included_feature_indices)
+#
+# print(f"Model R2 score: {r2}")
+# print(f"Model Cp score: {model_cp:.2f}")
+# print_coefs_table([intercept] + predicted_polynomial_coeficients)
+#
+# print("\n- - -\n")
+
+# Task f
+
+# Generate some data & features
+X, Y, init_features = generate_data_2()
+
+SIGMA_SQUARED = calculate_sigma2(init_features)
+
+# Try only forward-stepwise-selection(FSS)
+included_feature_indices = forward_stepwise_selection()
 model_cp, r2, intercept, coefs = train_and_test([init_features[i] for i in sorted(list(included_feature_indices))])
 predicted_polynomial_coeficients = arrange_polynomial_coefficients(coefs, included_feature_indices)
 
+print("Only forward stepwise selection(task F with linear regression):")
 print(f"Model R2 score: {r2}")
 print(f"Model Cp score: {model_cp:.2f}")
 print_coefs_table([intercept] + predicted_polynomial_coeficients)
 
 print("\n- - -\n")
 
-# Try BSS + FSS
-print("Both stepwise selection (backward and forward):")
-included_feature_indices = backward_stepwise_selection(min_amount_of_features=3)
-included_feature_indices = forward_stepwise_selection(max_amount_of_features=10,
-                                                      included_feature_indices=included_feature_indices)
+# Try only backward-stepwise-selection(BSS)
+included_feature_indices = backward_stepwise_selection(min_amount_of_features=1)
 model_cp, r2, intercept, coefs = train_and_test([init_features[i] for i in sorted(list(included_feature_indices))])
 predicted_polynomial_coeficients = arrange_polynomial_coefficients(coefs, included_feature_indices)
 
+print("Only backward stepwise selection(task F with linear regression):")
 print(f"Model R2 score: {r2}")
 print(f"Model Cp score: {model_cp:.2f}")
 print_coefs_table([intercept] + predicted_polynomial_coeficients)
+
+print("\n- - -\n")
+
+# No FSS or BSS
+included_feature_indices = backward_stepwise_selection(min_amount_of_features=10)  # Basically we do not exclude anything
+model_cp, r2, intercept, coefs = train_and_test([init_features[i] for i in sorted(list(included_feature_indices))])
+predicted_polynomial_coeficients = arrange_polynomial_coefficients(coefs, included_feature_indices)
+
+print("No FSS or BSS - just linear regression with all features")
+print(f"Model R2 score: {r2}")
+print(f"Model Cp score: {model_cp:.2f}")
+print_coefs_table([intercept] + predicted_polynomial_coeficients)
+
+print("\n- - -\n")
